@@ -2,8 +2,6 @@ export const metadata = {
   title: "PD Secure Client Authorization",
   description: "Create Authorization Key",
   icons: {
-    icon: "/icon-192.png",
-    shortcut: "/icon-192.png",
     apple: "/icon-192.png",
   },
 };
