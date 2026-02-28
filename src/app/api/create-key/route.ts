@@ -1,48 +1,37 @@
-import { NextResponse } from "next/server";
-import { v4 as uuidv4 } from "uuid";
-import fs from "fs";
-import path from "path";
-
+// src/app/api/create-key/route.ts
 export async function POST(req: Request) {
   try {
     const { password } = await req.json();
 
-    if (!password) {
-      return NextResponse.json(
-        { message: "Password required" },
+    // Validate password again (optional, for extra safety)
+    const rules = {
+      capital: /[A-Z]/.test(password),
+      length: password.length >= 7,
+      alphanumeric:
+        /^[a-zA-Z0-9!@#$%^&*(),.?":{}|<>]+$/.test(password) &&
+        /[a-zA-Z]/.test(password) &&
+        /[0-9]/.test(password),
+      special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    };
+
+    const isValid = Object.values(rules).every(Boolean);
+
+    if (!isValid) {
+      return new Response(
+        JSON.stringify({ error: "Password does not meet criteria" }),
         { status: 400 }
       );
     }
 
-    // Generate secure authorization key
-    const authKey = uuidv4();
+    // Simulate key creation (you can store in DB later)
+    const key = Buffer.from(password).toString("base64"); // temporary key
 
-    const filePath = path.join(process.cwd(), "keys.json");
-
-    let existingKeys = [];
-
-    if (fs.existsSync(filePath)) {
-      const fileData = fs.readFileSync(filePath, "utf-8");
-      existingKeys = JSON.parse(fileData);
-    }
-
-    existingKeys.push({
-      password,
-      authKey,
-      createdAt: new Date().toISOString(),
+    // Return success
+    return new Response(JSON.stringify({ key }), { status: 200 });
+  } catch (err) {
+    console.error("Error in create-key API:", err);
+    return new Response(JSON.stringify({ error: "Internal Server Error" }), {
+      status: 500,
     });
-
-    fs.writeFileSync(filePath, JSON.stringify(existingKeys, null, 2));
-
-    return NextResponse.json({
-      message: "Authorization key created",
-      authKey,
-    });
-
-  } catch (error) {
-    return NextResponse.json(
-      { message: "Server error" },
-      { status: 500 }
-    );
   }
 }
