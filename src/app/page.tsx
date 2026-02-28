@@ -5,6 +5,7 @@ export default function Home() {
   const [keyValue, setKeyValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const rules = {
     capital: /[A-Z]/.test(keyValue),
@@ -18,11 +19,35 @@ export default function Home() {
 
   const isValid = Object.values(rules).every(Boolean);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isValid) return;
-    setLoading(true);
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!isValid || loading) return;
+
+  setLoading(true);
+  setSuccess(false);
+
+  try {
+    const res = await fetch("/api/create-key", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ password: keyValue }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      setSuccess(true);
+      setKeyValue("");
+    }
+
+  } catch (err) {
+    console.error("Error creating key");
+  }
+
+  setLoading(false);
+};
 
   return (
     <div className="container">
@@ -39,48 +64,50 @@ export default function Home() {
         <h1 className="title">Welcome Ms. KeyHealth</h1>
         <h3 className="subtitle">Create your Authorization Key</h3>
 
-        <form onSubmit={handleSubmit} className="form">
+        {!success && (
+          <form onSubmit={handleSubmit} className="form">
 
-          <div className="inputWrapper">
-            <input
-              type={showPassword ? "text" : "password"}
-              value={keyValue}
-              onChange={(e) => setKeyValue(e.target.value)}
-              placeholder="Enter Authorization Key"
-              className="input"
-            />
+            <div className="inputWrapper">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={keyValue}
+                onChange={(e) => setKeyValue(e.target.value)}
+                placeholder="Enter Authorization Key"
+                className="input"
+              />
 
-            <span
-              onClick={() => setShowPassword(!showPassword)}
-              className="eye"
+              <span
+                onClick={() => setShowPassword(!showPassword)}
+                className="eye"
+              >
+                {showPassword ? "🙈" : "👁"}
+              </span>
+            </div>
+
+            <div className="rules">
+              <p className={rules.capital ? "valid" : "invalid"}>
+                • At least one capital letter
+              </p>
+              <p className={rules.length ? "valid" : "invalid"}>
+                • At least 7 characters
+              </p>
+              <p className={rules.alphanumeric ? "valid" : "invalid"}>
+                • Must be alphanumeric
+              </p>
+              <p className={rules.special ? "valid" : "invalid"}>
+                • At least one special character
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              disabled={!isValid || loading}
+              className={`button ${isValid ? "active" : ""}`}
             >
-              {showPassword ? "🙈" : "👁"}
-            </span>
-          </div>
-
-          <div className="rules">
-            <p className={rules.capital ? "valid" : "invalid"}>
-              • At least one capital letter
-            </p>
-            <p className={rules.length ? "valid" : "invalid"}>
-              • At least 7 characters
-            </p>
-            <p className={rules.alphanumeric ? "valid" : "invalid"}>
-              • Must be alphanumeric
-            </p>
-            <p className={rules.special ? "valid" : "invalid"}>
-              • At least one special character
-            </p>
-          </div>
-
-          <button
-            type="submit"
-            disabled={!isValid}
-            className={`button ${isValid ? "active" : ""}`}
-          >
-            Create
-          </button>
-        </form>
+              Create
+            </button>
+          </form>
+        )}
 
         {loading && (
           <div className="loadingWrapper">
@@ -92,9 +119,24 @@ export default function Home() {
             </p>
           </div>
         )}
+
+        {success && (
+          <div className="loadingWrapper">
+            <p className="loadingText">
+              ✅ Authorization Key Created Successfully
+            </p>
+          </div>
+        )}
+
+        {success && (
+  <div className="successMessage">
+    Authorization Key has been successfully created ✅
+  </div>
+)}
       </div>
 
       <style jsx>{`
+        /* Your existing styles remain unchanged */
         .container {
           height: 100vh;
           display: flex;
@@ -141,27 +183,12 @@ export default function Home() {
           align-items: center;
         }
 
-        .title {
-          color: #d4af37;
-          margin-bottom: 10px;
-        }
+        .title { color: #d4af37; margin-bottom: 10px; }
+        .subtitle { color: #cbd5e1; margin-bottom: 35px; }
 
-        .subtitle {
-          color: #cbd5e1;
-          margin-bottom: 35px;
-        }
+        .form { width: 100%; max-width: 380px; }
 
-        /* THIS fixes your alignment issue */
-        .form {
-          width: 100%;
-          max-width: 380px;
-        }
-
-        .inputWrapper {
-          position: relative;
-          left: 5%;
-          width: 80%;
-        }
+        .inputWrapper { position: relative; left: 5%; width: 80%; }
 
         .input {
           width: 90%;
@@ -188,19 +215,10 @@ export default function Home() {
           color: #d4af37;
         }
 
-        .rules {
-          text-align: left;
-          margin-top: 20px;
-          font-size: 13px;
-        }
+        .rules { text-align: left; margin-top: 20px; font-size: 13px; }
 
-        .valid {
-          color: #d4af37;
-        }
-
-        .invalid {
-          color: #64748b;
-        }
+        .valid { color: #d4af37; }
+        .invalid { color: #64748b; }
 
         .button {
           margin-top: 25px;
@@ -247,6 +265,29 @@ export default function Home() {
           font-size: 13px;
         }
 
+        .successMessage {
+  margin-top: 20px;
+  padding: 14px;
+  background: rgba(0, 255, 140, 0.08);
+  border: 1px solid #00ff8c;
+  color: #00ff8c;
+  border-radius: 10px;
+  font-size: 14px;
+  text-align: center;
+  animation: fadeIn 0.4s ease;
+  box-shadow: 0 0 20px rgba(0, 255, 140, 0.4);
+}
+
+.createButton.loading {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
         @keyframes loading {
           0% { transform: translateX(-100%); }
           100% { transform: translateX(300%); }
@@ -255,12 +296,6 @@ export default function Home() {
         @keyframes scroll {
           0% { transform: translateY(0); }
           100% { transform: translateY(-50%); }
-        }
-
-        @media (max-width: 500px) {
-          .card {
-            padding: 40px 25px;
-          }
         }
       `}</style>
     </div>
