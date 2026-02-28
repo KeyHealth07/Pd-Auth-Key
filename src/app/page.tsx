@@ -19,34 +19,27 @@ export default function Home() {
 
   const isValid = Object.values(rules).every(Boolean);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+const handleSubmit = (e: React.FormEvent) => {
   e.preventDefault();
-  if (!isValid || loading) return;
+  if (!isValid) return;
 
   setLoading(true);
   setSuccess(false);
 
-  try {
-    const res = await fetch("/api/create-key", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ password: keyValue }),
-    });
+  // Simulate authorization processing
+  setTimeout(() => {
+    setLoading(false);
+    setSuccess(true);
 
-    const data = await res.json();
+    // Reset form
+    setKeyValue('');
 
-    if (res.ok) {
-      setSuccess(true);
-      setKeyValue("");
-    }
+    // Hide success after 3 seconds (optional)
+    setTimeout(() => {
+      setSuccess(false);
+    }, 3000);
 
-  } catch (err) {
-    console.error("Error creating key");
-  }
-
-  setLoading(false);
+  }, 3000); // 3 second loading simulation
 };
 
   return (
